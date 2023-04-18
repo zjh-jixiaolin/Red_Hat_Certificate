@@ -1,0 +1,148 @@
+考试环境：1台物理机（Linux系统的物理机），两台虚拟机（考试的两台机器）
+	- 物理机：Linux系统：只有普通的用户权限
+	- 虚拟机：Linux系统：一台知道密码，另一台不知道密码（需要破解密码）
+- 考官机器：看不到的机器，操作虚拟机获取资源的地方。
+
+题目：
+
+虚拟机1：
+	- 1、配置网络（使用 nmcli connection show）查看需要配置的网卡。
+		- 修改以太网类型为 **ethernet** 的网卡
+		- 修改网卡时，网卡需要加入单引号（''）
+		- 注意：考试会有多张网卡，更改完主机名后使用（bash）验证
+
+	- 2、配置yum源，并安装vim。(一开始只有vi编辑器)
+		- 忘记config-manager (解决：使用 dnf --help | grep man)
+		- 获取的yum配置文件（数字验证没有关闭），需要使用gpgcheck=0 关闭，否则报错。
+		- yum clean all 清空仓库
+		- yum repolist 获取验证
+		- 测试：yum -y install vim
+
+	- 3、设置 SELinux
+		- 查看端口 （semanage port -l | grep http）
+		- 设置端口 （semanage port -a -t http_port_t -p tcp 82）
+		- 设置安装上下文 (chcon -R --reference=/var/www /var/www/html)
+			- 忘记命令：chcon -R --help | grep ref
+		- 重启服务并设置开机自启
+	
+	- 4、配置用户账户
+		-  添加组：groupadd      添加用户并设置从属组：useradd
+		- 设置**次要组**要使用 -G
+	
+	- 5、配置 cron 计划任务
+		- 分、时、日、月、周。
+		- crontab -e（编辑） -u（用户）
+
+	- 6、创建目录
+		- 涉及属组关系：chown
+		- 涉及权限问题(大类情况)：chmod
+		- g+s: 强制将此群组里的目录下文件编入到此群组中。 （添加特殊权限）
+		- 验证：创建一个新文件验证，然后ll -d
+
+	- 7、配置 NTP 时间同步（chrony）
+		- 删除原先的文件:rm -rf /etc/chrony.conf
+		- 重新安装：yum -y reinstall chrony
+		- 编辑配置文件：vim /etc/chrony.conf
+			-修改:pool classroom.example.com iburst
+		- 重启服务:systemctl restart chronyd
+		- 开机启动启动:systemctl enable chronyd
+		- 验证：chronyc sources -v
+
+	-8、配置 autofs
+		- 安装：yum -y install autofs
+		- 修改主配置文件：vim /etc/auto.master
+			- 根据题意3
+			- 最后一行：挂载父目录(/home/rhel8) 规则文件(/etc/auto.rule)
+		- 修改规则文件（/etc/auto.rule）		
+			- 根据题意
+			- 添加:用户（user1）权限(-rw) 主目录（classroom....）
+		- 重启并设置开机自启动：autofs
+		- 验证：su - user1,然后pwd ——> 输出/home/rhel8/user1 为正确
+
+	-9、设置文件权限：
+		- 复制：cp
+		- 设置权限（根据用户精准设置）：setfacl -m（设置详细的权限：acl）
+		- 验证：getfacl /var/tmp/fstab
+
+	-10、创建用户账户
+		-创建用户:useradd -u(设置UID)
+		- 验证：id user2
+		- 设置密码：echo 123 | passwd --stdin user2
+
+	
+	-11、查找文件
+		- 题目：查找(find) student 所有(/)文件（-type f）并将其复制到/root/dfiles 目录下。
+		- 流程：先创建文件/root/dfiles
+		-  find / -user student -type f -exec cp -a {} /root/dfiles \;
+		- 注意：保留属组关系：cp -a
+
+	-12、过滤文件(注意是文件、如果是文件夹使用find
+	看到将这些行的副本原始顺序放在目录之中。
+
+	试题概述：
+	查找文件/etc/passwd 中包含字符串re的所有行，将所有这些行的副本按原始顺序放在文件/root/files中
+	grep re /etc/passwd > /root/files
+
+	考试例题：
+	1、查找文件 /usr/share/mime/packages/freedesktop.org.xml中包含字符串 ich 的所有行。
+	2、将所有行的副本按原始顺序放在文件 /root/lines中，/root/lines不得包含空行，且所有行必须是
+	   /usr/share/mime/packages/freedesktop.org.xml中原始行的确切副本。
+
+	grep ich /usr/share/mime/packages/freedesktop.org.xml > /root/lines
+
+
+	-13、创建存档
+		- -P：保留本身绝对路径（从跟开始）
+		- -c：创建
+		- -f：指定压缩文档（放在最后）
+		- -格式选项，根据题意查找,tar man | grep bzip2
+
+		- 验证：tar -tf /root/books.tar.gz
+
+
+
+	-16、题型不固定
+
+		-1、创建用于定位文件的脚本
+			权限理解：GID—2000 UID—4000 SID—1000
+			区间问题(例如介于30k-50k)：使用-size +30k  -size -50k
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
